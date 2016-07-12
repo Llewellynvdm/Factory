@@ -84,9 +84,12 @@ GoTmp "$historical"
 ## LOAD MAIN ##
 . "$DIR/main.sh"
 
+# use UTC+00:00 time also called zulu
+DateTimeCommit=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
 # commit the changes to the tmp branch
-commitChanges "$current"
-commitChanges "$historical"
+commitMessage=$(getMessage "Updated")
+commitChanges "$current" "$commitMessage $DateTimeCommit"
+commitChanges "$historical" "$commitMessage $DateTimeCommit"
 
 # get the latest updates
 getGitHard "$current"
@@ -98,8 +101,9 @@ selectFiles
 # use UTC+00:00 time also called zulu
 DateTimeMerge=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
 # merge the repos and push to remote
-mergeChanges "$current" "Merged $DateTimeMerge"
-mergeChanges "$historical" "Merged $DateTimeMerge"
+mergeMessage=$(getMessage "Merged")
+mergeChanges "$current" "$mergeMessage $DateTimeMerge"
+mergeChanges "$historical" "$mergeMessage $DateTimeMerge"
 
 # remove local repos to keep it small
 rmLocalRepo "$REPO"

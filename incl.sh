@@ -321,9 +321,26 @@ function RmTmp {
 function commitChanges {
     cd "$1"
     git add .
-    git commit -am "Updated $Datetimenow"
+    git commit -am "$2"
 }
 
+# set the commit messages
+function getMessage {
+    if [[ "$action" == 'all' ]]
+    then
+        echo "$1 All Rates"
+    elif [[ "$action" == 'main' ]]
+    then
+        echo "$1 Main Rates"
+    elif [[ "$action" == 'updater' ]]
+    then
+        echo "$1 ALLRATES.json & ALLVIPRATES.json"
+    else
+        echo "$1"
+    fi
+}
+
+# select what files should be cept
 function selectFiles {
     cd "$current"
     fileList=$(git diff master tmpUpdate --name-only)

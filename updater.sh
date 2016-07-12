@@ -50,20 +50,30 @@ AllVIP="ALLVIPRATES"
 declare -A bothDataSets
 bothDataSets["$All"]="{"
 bothDataSets["$AllVIP"]="{"
+action="updater"
 
 ### MAIN ALL && MAIN VIP ###
 setAll "$folder" "$All" "$AllVIP"   & VDMIO=$!
 setVIP "$folder" "$AllVIP"          & VDMBZ=$!
 wait $VDMIO
 wait $VDMBZ
-# do the git work
-Datetimenow=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
+
+# do basic fetch from remote branch
 git fetch
-git add .
-git commit -am "Updated ALLRATES.json and ALLVIPRATES.json $Datetimenow"
-# TODO may collide with remote repo
+
+# use UTC+00:00 time also called zulu
+Datetimenow=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
+
+# commit the changes to the tmp branch
+commitMessage=$(getMessage "Updated")
+commitChanges "$folder" "$commitMessage $Datetimenow"
+
+# merged changes
 git merge origin/master
+
+# TODO may collide with remote repos
 pushChanges
+
 # remove local repo to keep it small
 rmLocalRepo "$REPO"
 ended=$(date +"%s")
