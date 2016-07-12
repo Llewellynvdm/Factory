@@ -1,4 +1,5 @@
 # Exchange Rates Factory
+The Bash scripts used to update these repositories
 
 ## The Get Method (get.sh)
 Exchange Rates Factory method to get is a **BASH** script that clones these ferious [github] (https://github.com/ExchangeRates) repos in the smallest way possible to the server on which it runs, it then gets the latest exchange rates from Yahoo and update the local json records in the cloned repositories.
@@ -10,7 +11,7 @@ This can be done from multiple servers, since the script before it merges makes 
 ## The Updater Method (updater.sh)
 Exchange Rates Factory method to update is a **BASH** script that clones these [current github] (https://github.com/ExchangeRates/Current) repo in the smallest way possible to the server on which it runs, it then parses all the exchange rates in it and builds two files called ALLRATES.json & ALLVIPRATES.json with these lates exchange rates, it takes only around 2-3 minutes to run.
 
-It's written in BASH scripting language and only needs [jq] (https://stedolan.github.io/jq/).
+**It's all written in BASH scripting language and only needs [jq] (https://stedolan.github.io/jq/).**
 
 ## Why use this script?
 We have found that Yahoo is not always consistently giving the latest exchange rates in their system. We picked this up when we started tracking the data with git. So we found new exchange rates being replaced with old exchange rates.
@@ -95,3 +96,4 @@ more info soon....
 
  If you want to support this project, please consider donating:
  * PayPal: pay@vdm.io
+ * Bitcoin: 3H35PYwikEosvcjxHXGPLS1GufZ4b4iFu3
