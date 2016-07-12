@@ -51,8 +51,7 @@ function rmLocalRepo {
 
 # simple basic random
 function getRandom {
-    local rand=$(mkpasswd VDM)
-    echo ${rand//[^0-9A-Za-z]}
+    echo $(tr -dc 'A-HJ-NP-Za-km-z2-9' < /dev/urandom | dd bs=5 count=1 status=none)
 }
 
 # set the yahoo url and call the get date function
