@@ -29,10 +29,14 @@ if [[ ! -d "$DIR" || "$DIR" == '.' ]]; then DIR="$PWD"; fi
 # load functions
 . "$DIR/incl.sh"
 
-# we move out of this repo
+# we move out of the factory folder
 cd "$DIR"
 cd ../
-REPO="$PWD/VDM_T3MP_R3P0"
+
+# get random folder name to avoid conflict
+newFolder=$(getRandom)
+# set this repo location
+REPO="$PWD/T3MPR3P0_$newFolder"
 
 # path to local repo
 folder="$REPO/Updater"
@@ -59,9 +63,9 @@ git add .
 git commit -am "Updated ALLRATES.json and ALLVIPRATES.json $Datetimenow"
 # TODO may collide with remote repo
 git merge origin/master
-git push origin master -f
+pushChanges
 # remove local repo to keep it small
-rmLocalRepo "$folder"
+rmLocalRepo "$REPO"
 ended=$(date +"%s")
 jobTime=$((ended-started))
 echo "ALLRATES Update took seconds $jobTime ($Datetimenow)"

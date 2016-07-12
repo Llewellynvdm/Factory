@@ -30,10 +30,14 @@ if [[ ! -d "$DIR" || "$DIR" == '.' ]]; then DIR="$PWD"; fi
 . "$DIR/args.sh"
 . "$DIR/incl.sh"
 
-# we move out of this repo
+# we move out of the factory folder
 cd "$DIR"
 cd ../
-REPO="$PWD/VDM_T3MP_R3P0"
+
+# get random folder name to avoid conflict
+newFolder=$(getRandom)
+# set this repo location
+REPO="$PWD/T3MPR3P0_$newFolder"
 
 # current repo
 current="$REPO/Current"
@@ -91,13 +95,14 @@ getGitHard "$historical"
 # sort what files to keep
 selectFiles
 
+# use UTC+00:00 time also called zulu
+DateTimeMerge=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
 # merge the repos and push to remote
-mergeChanges "$current"
-mergeChanges "$historical"
+mergeChanges "$current" "Merged $DateTimeMerge"
+mergeChanges "$historical" "Merged $DateTimeMerge"
 
 # remove local repos to keep it small
-rmLocalRepo "$current"
-rmLocalRepo "$historical"
+rmLocalRepo "$REPO"
 
 ended=$(date +"%s" )
 jobTime=$((ended-started))

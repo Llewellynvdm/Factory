@@ -35,10 +35,11 @@ function setLocalRepo {
         cd "$REPO"
         local NAME=${3:-"$2"}
         # keep local repo small
-        git clone  --depth 2 "git@github.com:ExchangeRates/$2.git" "$NAME"
+        git clone --depth 1 "git@github.com:ExchangeRates/$2.git" "$NAME"
     fi
 }
 
+# remove a folder and all its content
 function rmLocalRepo {
     local FOLDER="$1"
     # ensure repos is removed
@@ -46,6 +47,12 @@ function rmLocalRepo {
     then
         rm -fR "$FOLDER"
     fi
+}
+
+# simple basic random
+function getRandom {
+    local rand=$(mkpasswd VDM)
+    echo ${rand//[^0-9A-Za-z]}
 }
 
 # set the yahoo url and call the get date function
@@ -359,10 +366,12 @@ function getFileDateTmp {
 }
 
 function mergeChanges {
-    # use UTC+00:00 time also called zulu
-    DateTimeMerge=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
     OnMaster "$1"
-    git merge -X theirs -m "Merged $DateTimeMerge" tmpUpdate
+    git merge -X theirs -m "$2" tmpUpdate
     RmTmp "$1"
+    pushChanges
+}
+
+function pushChanges {
     git push origin master -f
 }
