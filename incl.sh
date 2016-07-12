@@ -27,7 +27,7 @@
                                 ##############################################################
 
 # build the repo folders locally if not set already
-function setLocalRepo {
+function setLocalRepo () {
     # ensure repos is already set
     if [ ! -d "$1" ] 
     then
@@ -40,7 +40,7 @@ function setLocalRepo {
 }
 
 # remove a folder and all its content
-function rmLocalRepo {
+function rmLocalRepo () {
     local FOLDER="$1"
     # ensure repos is removed
     if [ -d "$FOLDER" ] 
@@ -50,12 +50,12 @@ function rmLocalRepo {
 }
 
 # simple basic random
-function getRandom {
+function getRandom () {
     echo $(tr -dc 'A-HJ-NP-Za-km-z2-9' < /dev/urandom | dd bs=5 count=1 status=none)
 }
 
 # set the yahoo url and call the get date function
-function get_YAHOO {
+function get_YAHOO () {
 
     urlstart="https://query.yahooapis.com/v1/public/yql?q=select%20*%20from%20yahoo.finance.xchange%20where%20pair%20in%20%28%22"
     urlend="%22%29&format=json&env=store://datatables.org/alltableswithkeys&callback="
@@ -64,7 +64,7 @@ function get_YAHOO {
 }
 
 # getting the data from yahoo
-function get_YAHOO_DATA {
+function get_YAHOO_DATA () {
 
     json=$(wget -q -O- "$1")
     Ids=($( echo "$json" | jq -r '.query.results.rate[].id'))
@@ -98,8 +98,101 @@ function get_YAHOO_DATA {
     done
 }
 
+# set data to local file in repo
+function setData () {
+
+    local folder="$1"
+    local target="$2"
+
+    # load local data to full set if not new found
+    updateLine4FullSet="\"$iDee_stored\":$json_one_line"
+    # load to full set
+    if [[ "${bothDataSets[$target]}" == "{" ]]
+    then
+        # first clear all data from file
+        > "$folder/$target.json"
+        bothDataSets["$target"]="{$updateLine4FullSet"
+    else
+        bothDataSets["$target"]=",\n$updateLine4FullSet"
+    fi
+    # now store next line
+    echo -e -n "${bothDataSets[$target]}" >> "$folder/$target.json"
+}
+
+# get data from file in local repo
+function getLocalData () {
+    
+    local file="$1"
+    storedData=$(<"$file")
+    
+    if [ $# -eq 2 ]
+    then
+        # get the stored id and all lines from the file
+        iDee_stored=($( echo "$storedData" | jq '.id' | tr -d \"))
+        json_one_line=$( echo "$storedData" | tr -d '\040\011\012\015')
+    else
+        # get the stored time from the file
+        DaTe_stored=($( echo "$storedData" | jq '.Date' | tr -d \"))
+        TiMe_stored=($( echo "$storedData" | jq '.Time' | tr -d \"))
+    fi
+}
+
+
+function closeDataSet () {
+
+    local folder="$1"
+    local target="$2"
+
+    # now store closing line
+    if [[ -n "${bothDataSets[$target]}" && "${bothDataSets[$target]}" != "{" ]]
+    then
+        bothDataSets["$target"]="}"
+        echo -e -n "${bothDataSets[$target]}" >> "$folder/$target.json"
+    fi
+}
+
+# main set all data
+function setAll () {
+
+    local filename
+    local folder="$1"
+    local All="$2"
+    local AllVIP="$3"
+
+    cd "$folder"
+    for filename in *.json; do
+        if [[ -n "$folder/$filename" && "$filename" != "$All.json" &&  "$filename" != "$AllVIP.json" ]]
+        then
+            getLocalData "$folder/$filename" "Updater"
+            setData "$folder" "$All"
+        fi
+    done
+    # now store last line
+    closeDataSet "$folder" "$All"
+}
+
+function setVIP () {
+
+    local folder="$1"
+    local AllVIP="$2"
+    # load main currencies for VIP
+    readarray -t currencies < "$DIR/mainCurrencies"
+
+    for currency1 in "${currencies[@]}" ; do
+        for currency2 in "${currencies[@]}" ; do
+            if [[ "$currency1" != "$currency2" && -n "$folder/$currency1$currency2.json" ]]
+            then
+                getLocalData "$folder/$currency1$currency2.json" "Updater"
+                setData "$folder" "$AllVIP"
+            fi
+        done
+    done
+    # now store last line
+    closeDataSet "$folder" "$AllVIP"
+}
+
 # do some house cleaning work
-function house_cleaning {
+function house_cleaning () {
     # load the arguments
     NaMe="$1"
     iDee="$2"
@@ -138,100 +231,24 @@ function house_cleaning {
     fi
 }
 
-# main set all data
-function setAll {
-
-    local filename
-    local folder="$1"
-    local All="$2"
-    local AllVIP="$3"
-
-    cd "$folder"
-    for filename in *.json; do
-        if [[ -n "$folder/$filename" && "$filename" != "$All.json" &&  "$filename" != "$AllVIP.json" ]]
-        then
-            getLocalData "$folder/$filename" "Updater"
-            setData "$folder" "$All"
-        fi
-    done
-    # now store last line
-    closeDataSet "$folder" "$All"
-}
-
-function setVIP {
-
-    local folder="$1"
-    local AllVIP="$2"
-    # load main currencies for VIP
-    readarray -t currencies < "$DIR/mainCurrencies"
-
-    for currency1 in "${currencies[@]}" ; do
-        for currency2 in "${currencies[@]}" ; do
-            if [[ "$currency1" != "$currency2" && -n "$folder/$currency1$currency2.json" ]]
-            then
-                getLocalData "$folder/$currency1$currency2.json" "Updater"
-                setData "$folder" "$AllVIP"
-            fi
-        done
-    done
-    # now store last line
-    closeDataSet "$folder" "$AllVIP"
-}
-
-# set data to local file in repo
-function setData {
-
-    local folder="$1"
-    local target="$2"
-
-    # load local data to full set if not new found
-    updateLine4FullSet="\"$iDee_stored\":$json_one_line"
-    # load to full set
-    if [[ "${bothDataSets[$target]}" == "{" ]]
+# set update switch
+function set_update_ready () {
+    # load the arguments
+    typeData="$1"
+    # switch to set update to true
+    if [[ $typeData == Current ]]
     then
-        # first clear all data from file
-        > "$folder/$target.json"
-        bothDataSets["$target"]="{$updateLine4FullSet"
-    else
-        bothDataSets["$target"]=",\n$updateLine4FullSet"
+        updateCurrent=1
     fi
-    # now store next line
-    echo -e -n "${bothDataSets[$target]}" >> "$folder/$target.json"
-}
-
-# get data from file in local repo
-function getLocalData {
-    
-    local file="$1"
-    storedData=$(<"$file")
-    
-    if [ $# -eq 2 ]
+    # switch to set update to true
+    if [[ $typeData == History ]]
     then
-        # get the stored id and all lines from the file
-        iDee_stored=($( echo "$storedData" | jq '.id' | tr -d \"))
-        json_one_line=$( echo "$storedData" | tr -d '\040\011\012\015')
-    else
-        # get the stored time from the file
-        DaTe_stored=($( echo "$storedData" | jq '.Date' | tr -d \"))
-        TiMe_stored=($( echo "$storedData" | jq '.Time' | tr -d \"))
-    fi
-}
-
-function closeDataSet {
-
-    local folder="$1"
-    local target="$2"
-
-    # now store closing line
-    if [[ -n "${bothDataSets[$target]}" && "${bothDataSets[$target]}" != "{" ]]
-    then
-        bothDataSets["$target"]="}"
-        echo -e -n "${bothDataSets[$target]}" >> "$folder/$target.json"
+        updateHistory=1
     fi
 }
 
 # make sure the data given is newer then what is in the repo
-function check_if_update_ready {
+function check_if_update_ready () {
     # load the arguments
     typeData="$1"
     wrongTime00="00:"
@@ -275,57 +292,41 @@ function check_if_update_ready {
     fi
 }
 
-# set update switch
-function set_update_ready {
-    # load the arguments
-    typeData="$1"
-    # switch to set update to true
-    if [[ $typeData == Current ]]
-    then
-        updateCurrent=1
-    fi
-    # switch to set update to true
-    if [[ $typeData == History ]]
-    then
-        updateHistory=1
-    fi
-}
-
 #git functions at start up
-function getGitHard {
+function getGitHard () {
     OnMaster "$1"
     git fetch
     git gc
     git reset --hard origin/master
     git clean -f -d
 }
-function OnMaster {
+function OnMaster () {
     cd "$1"
     git checkout master
 }
-function OnTmp {
+function OnTmp () {
     cd "$1"
     git checkout tmpUpdate
 }
-function GoTmp {
+function GoTmp () {
     cd "$1"
     git checkout -b tmpUpdate
 }
-function RmTmp {
+function RmTmp () {
     cd "$1"
     git checkout master
     git branch -D tmpUpdate
 }
 
 # git function at end
-function commitChanges {
+function commitChanges () {
     cd "$1"
     git add .
     git commit -am "$2"
 }
 
 # set the commit messages
-function getMessage {
+function getMessage () {
     if [[ "$action" == 'all' ]]
     then
         echo "$1 All Rates"
@@ -340,36 +341,12 @@ function getMessage {
     fi
 }
 
-# select what files should be cept
-function selectFiles {
-    cd "$current"
-    fileList=$(git diff master tmpUpdate --name-only)
-    OnMaster "$1"
-    for fileName_c in "${fileList[@]}"; do
-        getFileDateMaster "$current" "$fileName_c"
-    done
-    OnTmp "$1"
-    for fileName_c in "${fileList[@]}"; do
-        getFileDateTmp "$current" "$fileName_c"
-    done
-    cd "$historical"
-    fileList=$(git diff master tmpUpdate --name-only)
-    OnMaster "$1"
-    for fileName_h in "${fileList[@]}"; do
-        getFileDateMaster "$historical" "$fileName_h"
-    done
-    OnTmp "$1"
-    for fileName_h in "${fileList[@]}"; do
-        getFileDateTmp "$historical" "$fileName_h"
-    done
-}
-
-function getFileDateMaster {
+function getFileDateMaster () {
     # get file date in master
     MasterFileChanged["$2"]=$(date +"%s" -r "$1/$2")
 }
 
-function getFileDateTmp {
+function getFileDateTmp () {
     # get file date in master
     TmpFileChanged["$2"]=$(date +"%s" -r "$1/$2")
     # now see that we should keep the update
@@ -381,13 +358,39 @@ function getFileDateTmp {
     fi
 }
 
-function mergeChanges {
+# select what files should be cept
+function selectFiles () {
+    cd "$current"
+    local fileList=($(git diff master tmpUpdate --name-only))
+    local fileName_c
+    local fileName_h
+    OnMaster "$current"
+    for fileName_c in "${fileList[@]}"; do
+        getFileDateMaster "$current" "$fileName_c"
+    done
+    OnTmp "$current"
+    for fileName_c in "${fileList[@]}"; do
+        getFileDateTmp "$current" "$fileName_c"
+    done
+    cd "$historical"
+    fileList=$(git diff master tmpUpdate --name-only)
+    OnMaster "$historical"
+    for fileName_h in "${fileList[@]}"; do
+        getFileDateMaster "$historical" "$fileName_h"
+    done
+    OnTmp "$historical"
+    for fileName_h in "${fileList[@]}"; do
+        getFileDateTmp "$historical" "$fileName_h"
+    done
+}
+
+function pushChanges () {
+    git push origin master -f
+}
+
+function mergeChanges () {
     OnMaster "$1"
     git merge -X theirs -m "$2" tmpUpdate
     RmTmp "$1"
     pushChanges
-}
-
-function pushChanges {
-    git push origin master -f
 }
