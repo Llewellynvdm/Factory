@@ -248,7 +248,7 @@ function set_update_ready () {
 }
 
 # make sure the data given is newer then what is in the repo
-function check_if_update_ready () {
+function check_if_update_ready () {[ ! -f
     # load the arguments
     typeData="$1"
     wrongTime00="00:"
@@ -343,12 +343,22 @@ function getMessage () {
 
 function getFileDateMaster () {
     # get file date in master
-    MasterFileChanged["$2"]=$(date +"%s" -r "$1/$2")
+    if [ ! -f "$1/$2" ];
+    then
+        MasterFileChanged["$2"]=0
+    else
+        MasterFileChanged["$2"]=$(date +"%s" -r "$1/$2")
+    fi
 }
 
 function getFileDateTmp () {
-    # get file date in master
-    TmpFileChanged["$2"]=$(date +"%s" -r "$1/$2")
+    # get file date in tmp
+    if [ ! -f "$1/$2" ];
+    then
+        TmpFileChanged["$2"]=0
+    else
+        TmpFileChanged["$2"]=$(date +"%s" -r "$1/$2")
+    fi
     # now see that we should keep the update
     if (("${MasterFileChanged[$2]}"-gt"${TmpFileChanged[$2]}"));
     then
