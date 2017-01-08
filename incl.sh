@@ -360,7 +360,7 @@ function getFileDateTmp () {
         TmpFileChanged["$2"]=$(date +"%s" -r "$1/$2")
     fi
     # now see that we should keep the update
-    if (("${MasterFileChanged[$2]}"-gt"${TmpFileChanged[$2]}"));
+    if (("${MasterFileChanged[$2]}">"${TmpFileChanged[$2]}"));
     then
         git checkout master -- "$2"
     fi
