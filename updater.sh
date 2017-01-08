@@ -75,7 +75,7 @@ git merge origin/master
 pushChanges
 
 # remove local repo to keep it small
-# rmLocalRepo "$REPO"
+rmLocalRepo "$REPO"
 ended=$(date +"%s")
 jobTime=$((ended-started))
 echo "ALLRATES Update took seconds $jobTime ($Datetimenow)"
