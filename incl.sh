@@ -350,7 +350,7 @@ function getFileDateTmp () {
     # get file date in master
     TmpFileChanged["$2"]=$(date +"%s" -r "$1/$2")
     # now see that we should keep the update
-    if (( "${MasterFileChanged[$2]}" > "${TmpFileChanged[$2]}" ));
+    if (("${MasterFileChanged[$2]}"-gt"${TmpFileChanged[$2]}"));
     then
         git checkout master -- "$2"
         git add .
@@ -373,7 +373,7 @@ function selectFiles () {
         getFileDateTmp "$current" "$fileName_c"
     done
     cd "$historical"
-    fileList=$(git diff master tmpUpdate --name-only)
+    fileList=($(git diff master tmpUpdate --name-only))
     OnMaster "$historical"
     for fileName_h in "${fileList[@]}"; do
         getFileDateMaster "$historical" "$fileName_h"
