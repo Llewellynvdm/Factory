@@ -248,7 +248,7 @@ function set_update_ready () {
 }
 
 # make sure the data given is newer then what is in the repo
-function check_if_update_ready () {[ ! -f
+function check_if_update_ready () {
     # load the arguments
     typeData="$1"
     wrongTime00="00:"
