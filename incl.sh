@@ -353,8 +353,6 @@ function getFileDateTmp () {
     if (("${MasterFileChanged[$2]}"-gt"${TmpFileChanged[$2]}"));
     then
         git checkout master -- "$2"
-        git add .
-        git commit --amend --no-edit --allow-empty
     fi
 }
 
@@ -372,6 +370,9 @@ function selectFiles () {
     for fileName_c in "${fileList[@]}"; do
         getFileDateTmp "$current" "$fileName_c"
     done
+    # make sure all changes are committed
+    git add .
+    git commit --amend --no-edit --allow-empty
     cd "$historical"
     fileList=($(git diff master tmpUpdate --name-only))
     OnMaster "$historical"
@@ -382,6 +383,9 @@ function selectFiles () {
     for fileName_h in "${fileList[@]}"; do
         getFileDateTmp "$historical" "$fileName_h"
     done
+    # make sure all changes are committed
+    git add .
+    git commit --amend --no-edit --allow-empty
 }
 
 function pushChanges () {
