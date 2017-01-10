@@ -10,8 +10,8 @@
 #                                                        |_|
 #/-------------------------------------------------------------------------------------------------------------------------------/
 #
-#	@version		2.0.1
-#	@build			4th July, 2016
+#	@version			3.0.0
+#	@build			9th January, 2017
 #	@package		Exchange Rates <https://github.com/ExchangeRates>
 #	@subpackage		Rate Factory
 #	@author			Llewellyn van der Merwe <https://github.com/Llewellynvdm>
@@ -21,11 +21,12 @@
 #/-----------------------------------------------------------------------------------------------------------------------------/
 
 #get start time
-started=$(date +"%s" )
+starrted=$(date +"%s" )
 
 # get script path
 DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$DIR" || "$DIR" == '.' ]]; then DIR="$PWD"; fi
+
 # load functions
 . "$DIR/args.sh"
 . "$DIR/incl.sh"
@@ -34,18 +35,33 @@ if [[ ! -d "$DIR" || "$DIR" == '.' ]]; then DIR="$PWD"; fi
 cd "$DIR"
 cd ../
 
+# some global variables
+oldBuilder=1
+yahooTake=1
+yahooTry=''
+
 # get random folder name to avoid conflict
 newFolder=$(getRandom)
 # set this repo location
 REPO="$PWD/T3MPR3P0_$newFolder"
 
-# current repo
-current="$REPO/Current"
-setLocalRepo "$current" "Current"
+# yahoo repo
+yahoo="$REPO/yahoo"
+setLocalRepo "$yahoo" "yahoo"
 
-# historical repo
-historical="$REPO/Historical"
-setLocalRepo "$historical" "Historical"
+# builder file
+builderFileName="builder.txt"
+builder="$REPO/$builderFileName"
+touch "$builder"
+
+# current builder file
+yahooBuilder="$yahoo/$builderFileName"
+
+# check if file exist
+if [ ! -f "$yahooBuilder" ] 
+then
+    oldBuilder=0
+fi
 
 # load currencies to check for
 CurName="Currencies"
@@ -55,59 +71,39 @@ readarray -t currencies < "$DIR/$action$CurName"
 Datetimenow=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
 echo "Started: $Datetimenow"
 
-# some global variables
-yahooTake=1
-updateCurrent=0
-updateHistory=0
-yahooTry=''
-json=''
-dateAsFileName=''
-exchangeRateJson=''
-declare -A MasterFileChanged
-declare -A TmpFileChanged
-iDee=''
-DaTe=''
-TiMe=''
-RaTe=''
-BiD=''
-AsK=''
-DaTe_stored=''
-TiMe_stored=''
-
-# do some git upDates on current data
-cd "$current"
-GoTmp "$current"
-# do some git upDates on historical data
-cd "$historical"
-GoTmp "$historical"
-
 ## LOAD MAIN ##
 . "$DIR/main.sh"
 
 # use UTC+00:00 time also called zulu
 DateTimeCommit=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
-# commit the changes to the tmp branch
+
+# move the file into place if it was not found
+if (( "$oldBuilder" ==  0 ));
+then
+	mv -f "$builder" "$yahooBuilder"
+fi
+
+# rates file
+ratesFileName="rates.json"
+ratesBuilder="$yahoo/$ratesFileName"
+
+# check if file exist
+if [ ! -f "$ratesBuilder" ] 
+then
+    touch "$ratesBuilder"
+fi
+
+# load all the rates to json (run updater)
+setJsonRates
+
+# push to repo
 commitMessage=$(getMessage "Updated")
-commitChanges "$current" "$commitMessage $DateTimeCommit"
-commitChanges "$historical" "$commitMessage $DateTimeCommit"
-
-# get the latest updates
-getGitHard "$current"
-getGitHard "$historical"
-
-# sort what files to keep
-selectFiles
-
-# use UTC+00:00 time also called zulu
-DateTimeMerge=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
-# merge the repos and push to remote
-mergeMessage=$(getMessage "Merged")
-mergeChanges "$current" "$mergeMessage $DateTimeMerge"
-mergeChanges "$historical" "$mergeMessage $DateTimeMerge"
+commitChanges "$yahoo" "$commitMessage $DateTimeCommit"
+pushChanges
 
 # remove local repos to keep it small
 rmLocalRepo "$REPO"
 
-ended=$(date +"%s" )
-jobTime=$((ended-started))
-echo "Base Update took seconds $jobTime ($Datetimenow)"
+ennded=$(date +"%s" )
+jobTime=$((ennded-starrted))
+echo "Full Update took $jobTime seconds ($DateTimeCommit)"

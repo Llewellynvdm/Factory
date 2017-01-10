@@ -10,9 +10,9 @@
 #                                                        |_|
 #/-------------------------------------------------------------------------------------------------------------------------------/
 #
-#	@version		2.0.1
-#	@build			4th July, 2016
-#	@package		Exchange Rates VIP <https://github.com/ExchangeRates>
+#	@version		3.0.0
+#	@build			9th January, 2017
+#	@package		Exchange Rates <https://github.com/ExchangeRates>
 #	@subpackage		Rate Factory
 #	@author			Llewellyn van der Merwe <https://github.com/Llewellynvdm>
 #	@copyright		Copyright (C) 2015. All Rights Reserved
@@ -76,246 +76,130 @@ function get_YAHOO_DATA () {
     Times=($( echo "$json" | jq -r '.query.results.rate[].Time'))
     for i in "${!Ids[@]}"; do
         # make sure we rest these
-        updateCurrent=0
-        updateHistory=0
         if [[ -n "${Ids[$i]}" && "null" != "${Ids[$i]}" ]]
         then
             if [[ "${Ids[$i]}" != *"=X"* && "${Dates[$i]}" != *"N/A"* && "${Times[$i]}" != *"N/A"* && "${Rates[$i]}" != *"N/A"* ]]
             then
-                house_cleaning "${Names[$i]}" "${Ids[$i]}" "${Dates[$i]}" "${Times[$i]}" "${Rates[$i]}" "${Bids[$i]}" "${Asks[$i]}"
-                # only update the new data given
-                if (( updateCurrent == 1 ));
-                then
-                    echo -e "$exchangeRateJson" > "$current/$iDee.json"
-                fi
-                # only update the new data given
-                if (( updateHistory == 1 ));
-                then
-                    echo -e "$exchangeRateJson" > "$historical/$iDee/$dateAsFileName.json"
-                fi
+                set_YAHOO_DATA "${Names[$i]}" "${Ids[$i]}" "${Dates[$i]}" "${Times[$i]}" "${Rates[$i]}" "${Bids[$i]}" "${Asks[$i]}" & # to speed up the work
             fi
         fi
     done
 }
 
-# set data to local file in repo
-function setData () {
-
-    local folder="$1"
-    local target="$2"
-
-    # load local data to full set if not new found
-    updateLine4FullSet="\"$iDee_stored\":$json_one_line"
-    # load to full set
-    if [[ "${bothDataSets[$target]}" == "{" ]]
-    then
-        # first clear all data from file
-        > "$folder/$target.json"
-        bothDataSets["$target"]="{$updateLine4FullSet"
-    else
-        bothDataSets["$target"]=",\n$updateLine4FullSet"
-    fi
-    # now store next line
-    echo -e -n "${bothDataSets[$target]}" >> "$folder/$target.json"
-}
-
-# get data from file in local repo
-function getLocalData () {
-    
-    local file="$1"
-    storedData=$(<"$file")
-    
-    if [ $# -eq 2 ]
-    then
-        # get the stored id and all lines from the file
-        iDee_stored=($( echo "$storedData" | jq '.id' | tr -d \"))
-        json_one_line=$( echo "$storedData" | tr -d '\040\011\012\015')
-    else
-        # get the stored time from the file
-        DaTe_stored=($( echo "$storedData" | jq '.Date' | tr -d \"))
-        TiMe_stored=($( echo "$storedData" | jq '.Time' | tr -d \"))
-    fi
-}
-
-
-function closeDataSet () {
-
-    local folder="$1"
-    local target="$2"
-
-    # now store closing line
-    if [[ -n "${bothDataSets[$target]}" && "${bothDataSets[$target]}" != "{" ]]
-    then
-        bothDataSets["$target"]="}"
-        echo -e -n "${bothDataSets[$target]}" >> "$folder/$target.json"
-    fi
-}
-
-# main set all data
-function setAll () {
-
-    local filename
-    local folder="$1"
-    local All="$2"
-    local AllVIP="$3"
-
-    cd "$folder"
-    for filename in *.json; do
-        if [[ -n "$folder/$filename" && "$filename" != "$All.json" &&  "$filename" != "$AllVIP.json" ]]
-        then
-            getLocalData "$folder/$filename" "Updater"
-            setData "$folder" "$All"
-        fi
-    done
-    # now store last line
-    closeDataSet "$folder" "$All"
-}
-
-function setVIP () {
-
-    local folder="$1"
-    local AllVIP="$2"
-    # load main currencies for VIP
-    readarray -t currencies < "$DIR/mainCurrencies"
-
-    for currency1 in "${currencies[@]}" ; do
-        for currency2 in "${currencies[@]}" ; do
-            if [[ "$currency1" != "$currency2" && -n "$folder/$currency1$currency2.json" ]]
-            then
-                getLocalData "$folder/$currency1$currency2.json" "Updater"
-                setData "$folder" "$AllVIP"
-            fi
-        done
-    done
-    # now store last line
-    closeDataSet "$folder" "$AllVIP"
-}
-
-# do some house cleaning work
-function house_cleaning () {
-    # load the arguments
-    NaMe="$1"
-    iDee="$2"
-    DaTe="$3"
-    TiMe="$4"
-    RaTe="$5"
-    BiD="$6"
-    AsK="$7"
-    # give little heads-up to console
-    echo "Now working with - $iDee"
-    # set the file name
-    dateAsFileName=$(date -d "$DaTe" +"%m-%d-%Y" )
-    # build data string for the fiels
-    exchangeRateJson="{\n\t\"Name\": \"$NaMe\",\n\t\"id\": \"$iDee\",\n\t\"Rate\": \"$RaTe\",\n\t\"Bid\": \"$BiD\",\n\t\"Ask\": \"$AsK\",\n\t\"Date\": \"$DaTe\",\n\t\"Time\": \"$TiMe\"\n}"
-    # create the historical currency exchange directory only when it was not already created
-    mkdir -p "$historical/$iDee"
-    # check that current file exist
-    if [[ -f "$current/$iDee.json" ]]
-    then
-        # get the local stored data
-        getLocalData "$current/$iDee.json"
-        # check the new data is newer then stored data
-        check_if_update_ready Current
-    else
-        updateCurrent=1
-    fi
-    # check the historical file exist
-    if [[ -f "$historical/$iDee/$dateAsFileName.json" ]]
-    then
-        # get the local stored data
-        getLocalData "$historical/$iDee/$dateAsFileName.json"
-        # check the new data is newer then stored data
-        check_if_update_ready History
-    else
-        updateHistory=1
-    fi
-}
-
-# set update switch
-function set_update_ready () {
-    # load the arguments
-    typeData="$1"
-    # switch to set update to true
-    if [[ $typeData == Current ]]
-    then
-        updateCurrent=1
-    fi
-    # switch to set update to true
-    if [[ $typeData == History ]]
-    then
-        updateHistory=1
-    fi
+# store the new data
+function set_YAHOO_DATA () {
+	# load the arguments
+	NaMe="$1"
+	iDee="$2"
+	DaTe="$3"
+	TiMe="$4"
+	RaTe="$5"
+	BiD="$6"
+	AsK="$7"
+	DaTe_stored=''
+	TiMe_stored=''
+	# give little heads-up to console
+	echo "Now working with - $iDee"
+	# check if update is due
+	if (( "$oldBuilder" ==  1 ));
+	then
+		# get the old data
+		lineFound=$(LC_ALL=C fgrep -n "$NaMe" "$yahooBuilder")
+		if (( ${#lineFound} > 1 ));
+		then
+			DaTe_stored=$(echo "$lineFound" | awk '{print $6}' )
+			TiMe_stored=$(echo "$lineFound" | awk '{print $7}' )
+			# check update is due
+			updateReady=$(check_if_update_ready "$DaTe" "$TiMe" "$DaTe_stored" "$TiMe_stored")
+			# check if update is due
+			if (( "$updateReady" ==  1 ));
+			then
+				updateLine=$(echo "$lineFound" | awk -F : '{print $1}' )
+				re='^[0-9]+$'
+				if [[ $updateLine =~ $re ]] ;
+				then
+					# build data string for the file
+					# name	idee	rate	bid	ask	date	time
+					exchangeRateLine="$NaMe\t$iDee\t$RaTe\t$BiD\t$AsK\t$DaTe\t$TiMe"
+					sed -i "${updateLine}s|.*|$exchangeRateLine|" "$yahooBuilder"
+				fi
+			fi
+		else
+			# build data string for the file
+			# name	idee	rate	bid	ask	date	time
+			exchangeRateLine="$NaMe\t$iDee\t$RaTe\t$BiD\t$AsK\t$DaTe\t$TiMe"
+			echo -e "$exchangeRateLine" >> "$yahooBuilder"
+		fi
+	else
+		# build data string for the file
+		# name	idee	rate	bid	ask	date	time
+		exchangeRateLine="$NaMe\t$iDee\t$RaTe\t$BiD\t$AsK\t$DaTe\t$TiMe"
+		echo -e "$exchangeRateLine" >> "$builder"
+	fi
 }
 
 # make sure the data given is newer then what is in the repo
 function check_if_update_ready () {
+    # load args
+    DaTte="$1"
+    TiMme="$2"
+    DaTte_stored="$3"
+    TiMme_stored="$4"
+    # defaults
+    newTime=''
+    storedTime=''
     # load the arguments
-    typeData="$1"
     wrongTime00="00:"
     wrongTime0="0:"
     correctTime="12:"
-    if [[ "$DaTe_stored" != *"N/A"* && "$TiMe_stored" != *"N/A"* ]]
+    if [[ "$DaTte_stored" != *"N/A"* && "$TiMme_stored" != *"N/A"* ]]
     then
         # fix mid-nite issue
-        if [[ "$TiMe_stored" == "$wrongTime00"* ]]
+        if [[ "$TiMme_stored" == "$wrongTime00"* ]]
         then
-            TiMe_stored="${TiMe_stored/$wrongTime00/$correctTime}"
+            TiMme_stored="${TiMme_stored/$wrongTime00/$correctTime}"
         fi
         # fix mid-nite issue
-        if [[ "$TiMe_stored" == "$wrongTime0"* ]]
+        if [[ "$TiMme_stored" == "$wrongTime0"* ]]
         then
-            TiMe_stored="${TiMe_stored/$wrongTime0/$correctTime}"
+            TiMme_stored="${TiMme_stored/$wrongTime0/$correctTime}"
         fi
         # set the stored time stamp
-        storedTime=$(TZ=":ZULU" date -d "$DaTe_stored $TiMe_stored" +"%s" )
+        storedTime=$(TZ=":ZULU" date -d "$DaTte_stored $TiMme_stored" +"%s" )
         # fix mid-nite issue
-        if [[ "$TiMe" == "$wrongTime00"* ]]
+        if [[ "$TiMme" == "$wrongTime00"* ]]
         then
-            TiMe="${TiMe/$wrongTime00/$correctTime}"
+            TiMme="${TiMme/$wrongTime00/$correctTime}"
         fi
         # fix mid-nite issue
-        if [[ "$TiMe" == "$wrongTime0"* ]]
+        if [[ "$TiMme" == "$wrongTime0"* ]]
         then
-            TiMe="${TiMe/$wrongTime0/$correctTime}"
+            TiMme="${TiMme/$wrongTime0/$correctTime}"
         fi
         # set the new time stamp
-        newTime=$(TZ=":ZULU" date -d "$DaTe $TiMe" +"%s" )
+        newTime=$(TZ=":ZULU" date -d "$DaTte $TiMme" +"%s" )
         # update only that new date found
         if (( "$newTime" > "$storedTime" ));
         then
             # switch to set update to true
-            set_update_ready "$typeData"
+            echo 1
+	else
+	    echo 0
         fi
     else
         # switch to set update to true
-        set_update_ready "$typeData"
+        echo 1
     fi
 }
 
-#git functions at start up
-function getGitHard () {
-    OnMaster "$1"
-    git fetch
-    git gc
-    git reset --hard origin/master
-    git clean -f -d
-}
-function OnMaster () {
-    cd "$1"
-    git checkout master
-}
-function OnTmp () {
-    cd "$1"
-    git checkout tmpUpdate
-}
-function GoTmp () {
-    cd "$1"
-    git checkout -b tmpUpdate
-}
-function RmTmp () {
-    cd "$1"
-    git checkout master
-    git branch -D tmpUpdate
+function setJsonRates () {
+
+   # reset the file
+   echo -e -n  "{" > "$ratesBuilder"
+   # build data string for the file
+   awk '{print "\""$2"\":{" "\"Name\":" "\""$1"\", " "\"id\":" "\""$2"\", " "\"Rate\":" "\""$3"\", " "\"Bid\":" "\""$4"\", " "\"AsK\":" "\""$5"\", " "\"Date\":" "\""$6"\", " "\"Time\":" "\""$7"\"}," }' "$yahooBuilder" >> "$ratesBuilder"
+   # remove last coma and add closing brace  
+   sed -i '$ s/,$/}/g' "$ratesBuilder"
 }
 
 # git function at end
@@ -335,76 +219,12 @@ function getMessage () {
         echo "$1 Main Rates"
     elif [[ "$action" == 'updater' ]]
     then
-        echo "$1 ALLRATES.json & ALLVIPRATES.json"
+        echo "$1 rates.json"
     else
         echo "$1"
     fi
 }
 
-function getFileDateMaster () {
-    # get file date in master
-    if [ ! -f "$1/$2" ];
-    then
-        MasterFileChanged["$2"]=0
-    else
-        MasterFileChanged["$2"]=$(date +"%s" -r "$1/$2")
-    fi
-}
-
-function getFileDateTmp () {
-    # get file date in tmp
-    if [ ! -f "$1/$2" ];
-    then
-        TmpFileChanged["$2"]=0
-    else
-        TmpFileChanged["$2"]=$(date +"%s" -r "$1/$2")
-    fi
-    # now see that we should keep the update
-    if (("${MasterFileChanged[$2]}">"${TmpFileChanged[$2]}"));
-    then
-        git checkout master -- "$2"
-    fi
-}
-
-# select what files should be cept
-function selectFiles () {
-    cd "$current"
-    local fileList=($(git diff master tmpUpdate --name-only))
-    local fileName_c
-    local fileName_h
-    OnMaster "$current"
-    for fileName_c in "${fileList[@]}"; do
-        getFileDateMaster "$current" "$fileName_c"
-    done
-    OnTmp "$current"
-    for fileName_c in "${fileList[@]}"; do
-        getFileDateTmp "$current" "$fileName_c"
-    done
-    # make sure all changes are committed
-    git add .
-    git commit --amend --no-edit --allow-empty
-    cd "$historical"
-    fileList=($(git diff master tmpUpdate --name-only))
-    OnMaster "$historical"
-    for fileName_h in "${fileList[@]}"; do
-        getFileDateMaster "$historical" "$fileName_h"
-    done
-    OnTmp "$historical"
-    for fileName_h in "${fileList[@]}"; do
-        getFileDateTmp "$historical" "$fileName_h"
-    done
-    # make sure all changes are committed
-    git add .
-    git commit --amend --no-edit --allow-empty
-}
-
 function pushChanges () {
     git push origin master -f
-}
-
-function mergeChanges () {
-    OnMaster "$1"
-    git merge -X theirs -m "$2" tmpUpdate
-    RmTmp "$1"
-    pushChanges
 }

@@ -10,8 +10,8 @@
 #                                                        |_|
 #/-------------------------------------------------------------------------------------------------------------------------------/
 #
-#	@version		2.0.1
-#	@build			4th July, 2016
+#	@version			3.0.0
+#	@build			9th January, 2017
 #	@package		Exchange Rates <https://github.com/ExchangeRates>
 #	@subpackage		Rate Factory
 #	@author			Llewellyn van der Merwe <https://github.com/Llewellynvdm>

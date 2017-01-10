@@ -2,14 +2,12 @@
 The Bash scripts used to update these repositories
 
 ## The Get Method (get.sh)
-Exchange Rates Factory method to get is a **BASH** script that clones these various [github] (https://github.com/ExchangeRates) repos in the smallest way possible to the server on which it runs, it then gets the latest exchange rates from Yahoo and update the local json records in the cloned repositories.
+Exchange Rates Factory method to get is a **BASH** script that clones these various [github] (https://github.com/ExchangeRates) repos in the smallest way possible to the server on which it runs, it then gets the latest exchange rates from Yahoo and update the local builder.txt records in the cloned repositories.
 
 Once it is finished it will merge and push to this [github] (https://github.com/ExchangeRates) remote repository to insure that it is always up-to-date with the latest exchange rates from Yahoo. It will then remove the local cloned repo from the server to insure that the local data is minimal (due to git scalability issues).
 
-This can be done from multiple servers, since the script before it merges makes sure that any new changes made to the remote repositories are kept and not overwritten by this update since it takes about 20-30 minutes to update the 24000+ records.
-
 ## The Updater Method (updater.sh)
-Exchange Rates Factory method to update is a **BASH** script that clones these [current github] (https://github.com/ExchangeRates/Current) repo in the smallest way possible to the server on which it runs, it then parses all the exchange rates in it and builds two files called ALLRATES.json & ALLVIPRATES.json with these latest exchange rates. It takes only around 2-3 minutes to run.
+Exchange Rates Factory method to update is a **BASH** script that clones these [yahoo github] (https://github.com/ExchangeRates/yahoo) repo in the smallest way possible to the server on which it runs, it then parses all the exchange rates in it and build a file rates.json with these latest exchange rates. It takes only around 20 seconds to run at most.
 
 **It's all written in BASH scripting language and only needs [jq] (https://stedolan.github.io/jq/).**
 

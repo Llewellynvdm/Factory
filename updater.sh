@@ -10,9 +10,9 @@
 #                                                        |_|
 #/-------------------------------------------------------------------------------------------------------------------------------/
 #
-#	@version		2.0.1
-#	@build			4th July, 2016
-#	@package		Exchange Rates VIP <https://github.com/ExchangeRates>
+#	@version			3.0.0
+#	@build			9th January, 2017
+#	@package		Exchange Rates <https://github.com/ExchangeRates>
 #	@subpackage		Rate Factory
 #	@author			Llewellyn van der Merwe <https://github.com/Llewellynvdm>
 #	@copyright		Copyright (C) 2015. All Rights Reserved
@@ -21,7 +21,7 @@
 #/-----------------------------------------------------------------------------------------------------------------------------/
 
 #get start time
-started=$(date +"%s" )
+starrted=$(date +"%s" )
 
 # get script path
 DIR="${BASH_SOURCE%/*}"
@@ -38,44 +38,45 @@ newFolder=$(getRandom)
 # set this repo location
 REPO="$PWD/T3MPR3P0_$newFolder"
 
-# path to local repo
-folder="$REPO/Updater"
-setLocalRepo  "$folder" "Current" "Updater"
+# yahoo repo
+yahoo="$REPO/yahoo"
+setLocalRepo "$yahoo" "yahoo"
 
-# set some defaults
-iDee_stored=''
-json_one_line=''
-All="ALLRATES"
-AllVIP="ALLVIPRATES"
-declare -A bothDataSets
-bothDataSets["$All"]="{"
-bothDataSets["$AllVIP"]="{"
-action="updater"
+# builder file
+builderFileName="builder.txt"
+# current builder file
+yahooBuilder="$yahoo/$builderFileName"
 
-### MAIN ALL && MAIN VIP ###
-setAll "$folder" "$All" "$AllVIP"   & VDMIO=$!
-setVIP "$folder" "$AllVIP"          & VDMBZ=$!
-wait $VDMIO
-wait $VDMBZ
+if [ ! -f "$yahooBuilder" ] 
+then
+    echo 'No builder.txt found'
+    exit 1
+fi
 
-# do basic fetch from remote branch
-git fetch
+# rates file
+ratesFileName="rates.json"
+ratesBuilder="$yahoo/$ratesFileName"
+
+# check if file exist
+if [ ! -f "$ratesBuilder" ] 
+then
+    touch "$ratesBuilder"
+fi
+
+# load all the rates
+setJsonRates
 
 # use UTC+00:00 time also called zulu
 Datetimenow=$(TZ=":ZULU" date +"%m/%d/%Y @ %R (UTC)" )
 
-# commit the changes to the tmp branch
+# commit the changes to the repo
 commitMessage=$(getMessage "Updated")
-commitChanges "$folder" "$commitMessage $Datetimenow"
-
-# merged changes
-git merge origin/master
-
-# TODO may collide with remote repos
+commitChanges "$yahoo" "$commitMessage $Datetimenow"
 pushChanges
 
-# remove local repo to keep it small
+# remove local repos to keep it small
 rmLocalRepo "$REPO"
-ended=$(date +"%s")
-jobTime=$((ended-started))
-echo "ALLRATES Update took seconds $jobTime ($Datetimenow)"
+
+ennded=$(date +"%s" )
+jobTime=$((ennded-starrted))
+echo "Json Update took $jobTime seconds ($Datetimenow)"
