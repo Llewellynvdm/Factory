@@ -75,6 +75,7 @@ function get_YAHOO_DATA () {
     Dates=($( echo "$json" | jq -r '.query.results.rate[].Date'))
     Times=($( echo "$json" | jq -r '.query.results.rate[].Time'))
     for i in "${!Ids[@]}"; do
+	nAAm=''
         # make sure we rest these
         if [[ -n "${Ids[$i]}" && "null" != "${Ids[$i]}" ]]
         then
@@ -88,8 +89,9 @@ function get_YAHOO_DATA () {
 
 # store the new data
 function set_YAHOO_DATA () {
+
 	# load the arguments
-	NaMe="$1"
+	NaMe=$(setName "$1" "$2")
 	iDee="$2"
 	DaTe="$3"
 	TiMe="$4"
@@ -104,8 +106,8 @@ function set_YAHOO_DATA () {
 	if (( "$oldBuilder" ==  1 ));
 	then
 		# get the old data
-		lineFound=$(LC_ALL=C fgrep -n "$NaMe" "$yahooBuilder")
-		if (( ${#lineFound} > 1 ));
+		lineFound=$(LC_ALL=C fgrep -n "$iDee" "$yahooBuilder")
+		if (( ${#lineFound} > 3 ));
 		then
 			DaTe_stored=$(echo "$lineFound" | awk '{print $6}' )
 			TiMe_stored=$(echo "$lineFound" | awk '{print $7}' )
@@ -135,6 +137,29 @@ function set_YAHOO_DATA () {
 		# name	idee	rate	bid	ask	date	time
 		exchangeRateLine="$NaMe\t$iDee\t$RaTe\t$BiD\t$AsK\t$DaTe\t$TiMe"
 		echo -e "$exchangeRateLine" >> "$builder"
+	fi
+}
+
+function setName() {
+	namE="$1"
+	iDe="$2"
+	slashString="/"
+	if (( ${#namE} == 7 ));
+	then
+		if [[ "$namE" == *"$slashString"* ]]
+       		then
+			echo "$namE"
+		else
+			# return the ID as name
+			var1=${iDe:0:3}
+			var2=${iDe:3}
+			echo "$var1/$var2"
+		fi
+	else
+		# return the ID as name
+		var1=${iDe:0:3}
+		var2=${iDe:3}
+		echo "$var1/$var2"
 	fi
 }
 
