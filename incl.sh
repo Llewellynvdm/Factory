@@ -94,7 +94,7 @@ function set_YAHOO_DATA () {
 	NaMe=$(setName "$1" "$2")
 	iDee="$2"
 	DaTe="$3"
-	TiMe="$4"
+	TiMe=$(fixTime "$4")
 	RaTe="$5"
 	BiD="$6"
 	AsK="$7"
@@ -111,8 +111,10 @@ function set_YAHOO_DATA () {
 		then
 			DaTe_stored=$(echo "$lineFound" | awk '{print $6}' )
 			TiMe_stored=$(echo "$lineFound" | awk '{print $7}' )
+			# fix the time issue
+			TiMe_stored=$(fixTime "$TiMe_stored")
 			# check update is due
-			updateReady=$(check_if_update_ready "$DaTe" "$TiMe" "$DaTe_stored" "$TiMe_stored")
+			updateReady=$(checkStatus "$DaTe" "$TiMe" "$DaTe_stored" "$TiMe_stored")
 			# check if update is due
 			if (( "$updateReady" ==  1 ));
 			then
@@ -164,45 +166,44 @@ function setName() {
 }
 
 # make sure the data given is newer then what is in the repo
-function check_if_update_ready () {
+function fixTime () {
+    # load args
+    Tyd="$1"
+    # load the arguments
+    wrongTime00="00:"
+    wrongTime0="0:"
+    correctTime="12:"
+    if [[ "$Tyd" != *"N/A"* ]]
+    then
+        # fix mid-nite issue
+        if [[ "$Tyd" == "$wrongTime00"* ]]
+        then
+            Tyd="${Tyd/$wrongTime00/$correctTime}"
+        fi
+        # fix mid-nite issue
+        if [[ "$Tyd" == "$wrongTime0"* ]]
+        then
+            Tyd="${Tyd/$wrongTime0/$correctTime}"
+        fi
+    fi
+    echo "$Tyd"
+}
+
+# make sure the data given is newer then what is in the repo
+function checkStatus () {
     # load args
     DaTte="$1"
     TiMme="$2"
     DaTte_stored="$3"
     TiMme_stored="$4"
-    # defaults
-    newTime=''
-    storedTime=''
-    # load the arguments
-    wrongTime00="00:"
-    wrongTime0="0:"
-    correctTime="12:"
     if [[ "$DaTte_stored" != *"N/A"* && "$TiMme_stored" != *"N/A"* ]]
     then
-        # fix mid-nite issue
-        if [[ "$TiMme_stored" == "$wrongTime00"* ]]
-        then
-            TiMme_stored="${TiMme_stored/$wrongTime00/$correctTime}"
-        fi
-        # fix mid-nite issue
-        if [[ "$TiMme_stored" == "$wrongTime0"* ]]
-        then
-            TiMme_stored="${TiMme_stored/$wrongTime0/$correctTime}"
-        fi
         # set the stored time stamp
         storedTime=$(TZ=":ZULU" date -d "$DaTte_stored $TiMme_stored" +"%s" )
-        # fix mid-nite issue
-        if [[ "$TiMme" == "$wrongTime00"* ]]
-        then
-            TiMme="${TiMme/$wrongTime00/$correctTime}"
-        fi
-        # fix mid-nite issue
-        if [[ "$TiMme" == "$wrongTime0"* ]]
-        then
-            TiMme="${TiMme/$wrongTime0/$correctTime}"
-        fi
+        
         # set the new time stamp
         newTime=$(TZ=":ZULU" date -d "$DaTte $TiMme" +"%s" )
+
         # update only that new date found
         if (( "$newTime" > "$storedTime" ));
         then
