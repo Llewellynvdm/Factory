@@ -26,6 +26,10 @@ starrted=$(date +"%s" )
 # get script path
 DIR="${BASH_SOURCE%/*}"
 if [[ ! -d "$DIR" || "$DIR" == '.' ]]; then DIR="$PWD"; fi
+
+# load configuration file
+. "$DIR/config.sh"
+
 # load functions
 . "$DIR/incl.sh"
 
@@ -39,8 +43,8 @@ newFolder=$(getRandom)
 REPO="$PWD/T3MPR3P0_$newFolder"
 
 # yahoo repo
-yahoo="$REPO/yahoo"
-setLocalRepo "$yahoo" "yahoo"
+yahoo="$REPO/$REPONAME"
+setLocalRepo "$yahoo" "$REPONAME"
 
 # builder file
 builderFileName="builder.txt"

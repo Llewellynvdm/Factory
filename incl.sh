@@ -10,7 +10,7 @@
 #                                                        |_|
 #/-------------------------------------------------------------------------------------------------------------------------------/
 #
-#	@version		3.0.0
+#	@version			3.0.0
 #	@build			9th January, 2017
 #	@package		Exchange Rates <https://github.com/ExchangeRates>
 #	@subpackage		Rate Factory
@@ -35,7 +35,7 @@ function setLocalRepo () {
         cd "$REPO"
         local NAME=${3:-"$2"}
         # keep local repo small
-        git clone --depth 1 "git@github.com:ExchangeRates/$2.git" "$NAME"
+        git clone --depth 1 "$REPOURL/$2.git" "$NAME"
     fi
 }
 
