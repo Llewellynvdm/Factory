@@ -219,11 +219,10 @@ function checkStatus () {
 }
 
 function setJsonRates () {
-
    # reset the file
    echo -e -n  "{" > "$ratesBuilder"
    # build data string for the file
-   awk '{print "\""$2"\":{" "\"Name\":" "\""$1"\", " "\"id\":" "\""$2"\", " "\"Rate\":" "\""$3"\", " "\"Bid\":" "\""$4"\", " "\"AsK\":" "\""$5"\", " "\"Date\":" "\""$6"\", " "\"Time\":" "\""$7"\"}," }' "$yahooBuilder" >> "$ratesBuilder"
+   awk '{print "\""$2"\":{" "\"Name\":" "\""$1"\", " "\"id\":" "\""$2"\", " "\"Rate\":" "\""$3"\", " "\"Bid\":" "\""$4"\", " "\"Ask\":" "\""$5"\", " "\"Date\":" "\""$6"\", " "\"Time\":" "\""$7"\"}," }' "$yahooBuilder" >> "$ratesBuilder"
    # remove last coma and add closing brace  
    sed -i '$ s/,$/}/g' "$ratesBuilder"
 }
